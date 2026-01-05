@@ -14,6 +14,19 @@ def get_openai_api_key():
     """Retrieves OpenAI API key from environment variable."""
     return os.getenv("OPENAI_API_KEY")
 
+def get_font_path():
+    """Returns a path to a Chinese-supporting font."""
+    # Common Windows Chinese fonts
+    paths = [
+        r'C:\Windows\Fonts\simhei.ttf',
+        r'C:\Windows\Fonts\SimSun.ttc',
+        r'C:\Windows\Fonts\msyh.ttc'
+    ]
+    for p in paths:
+        if os.path.exists(p):
+            return p
+    return None # Fallback to default if not found
+
 def load_styles():
     """Returns basic QSS styles for the app."""
     return """
