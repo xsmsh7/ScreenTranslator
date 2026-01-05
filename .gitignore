@@ -19,3 +19,6 @@ build/
 # App specific
 *.log
 debug_capture.png
+
+# Secrets
+.env
