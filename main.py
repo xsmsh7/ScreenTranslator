@@ -110,12 +110,18 @@ class ScreenTranslatorApp:
         self.last_image = None
 
     def start_capture(self):
+        self.result_window.hide()  # Hide the result window
         self.overlay_window = overlay.CaptureOverlay()
         self.overlay_window.capture_complete.connect(self.handle_capture)
+        self.overlay_window.capture_cancelled.connect(self.handle_cancel) # Connect cancel signal
         self.overlay_window.show()
+
+    def handle_cancel(self):
+        self.result_window.show()
 
     def handle_capture(self, image):
         self.last_image = image
+        self.result_window.show() # Show window immediately
         self.result_window.image_label.setText("Processing OCR & Translation...")
         self.trigger_retranslate()
 

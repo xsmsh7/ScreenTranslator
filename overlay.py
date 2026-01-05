@@ -7,6 +7,7 @@ from PIL import Image
 
 class CaptureOverlay(QWidget):
     capture_complete = pyqtSignal(object)  # Signal emitting PIL Image
+    capture_cancelled = pyqtSignal()       # New signal for cancellation
 
     def __init__(self):
         super().__init__()
@@ -78,6 +79,7 @@ class CaptureOverlay(QWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
             self.close()
+            self.capture_cancelled.emit()
 
     def capture_screen_area(self):
         if not self.start_point or not self.end_point:
