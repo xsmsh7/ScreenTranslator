@@ -96,18 +96,29 @@ class AppController(QObject):
                 # Draw logic
                 x_min, y_min = group.left.min(), group.top.min()
                 x_max, y_max = (group.left + group.width).max(), (group.top + group.height).max()
+                box_w = x_max - x_min
+                box_h = y_max - y_min
                 
-                # Draw background
+                # Draw background (expanded slightly for legibility)
                 draw.rectangle([x_min-2, y_min-2, x_max+2, y_max+2], fill="white")
                 
-                # Draw text
-                h = y_max - y_min
-                font_size = max(12, int(h * 0.9))
+                # Robust font size calculation
+                font_size = max(12, int(box_h * 0.9))
                 try:
                     font = ImageFont.truetype(font_path, font_size) if font_path else ImageFont.load_default()
                 except:
                     font = ImageFont.load_default()
                 
+                # Auto-shrink if text is too wide for the box
+                text_bbox = draw.textbbox((0, 0), translated_text, font=font)
+                text_w = text_bbox[2] - text_bbox[0]
+                if text_w > box_w and box_w > 0:
+                    font_size = max(10, int(font_size * (box_w / text_w)))
+                    try:
+                        font = ImageFont.truetype(font_path, font_size) if font_path else ImageFont.load_default()
+                    except:
+                        font = ImageFont.load_default()
+
                 draw.text((x_min, y_min), translated_text, fill="black", font=font)
 
             self.update_ui_signal.emit("\n".join(full_original_text), translated_img)
