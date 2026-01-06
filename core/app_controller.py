@@ -82,25 +82,51 @@ class AppController(QObject):
             draw = ImageDraw.Draw(translated_img)
             font_path = utils.get_font_path()
             
-            # Grouping and Translation logic
-            lines = data.groupby(['block_num', 'line_num'])
-            full_original_text = []
+            # 1. Collect lines and Prepare translation groups
+            groups = data.groupby(['block_num', 'line_num'])
+            lines_metadata = []
+            original_texts = []
             
-            for _, group in lines:
+            for _, group in groups:
                 line_text = " ".join(group.text.astype(str)).strip()
                 if not line_text: continue
                 
-                full_original_text.append(line_text)
-                translated_text = translator.translate(line_text) or ""
+                original_texts.append(line_text)
                 
-                # Draw logic
+                # Calculate bounding box for this line
                 x_min, y_min = group.left.min(), group.top.min()
                 x_max, y_max = (group.left + group.width).max(), (group.top + group.height).max()
+                lines_metadata.append({
+                    'original': line_text,
+                    'box': (x_min, y_min, x_max, y_max)
+                })
+
+            if not original_texts:
+                self.update_ui_signal.emit("No translatable text found", image)
+                return
+
+            # 2. BATCH TRANSLATION: Join lines for better context and speed
+            full_original_block = "\n".join(original_texts)
+            translated_block = translator.translate(full_original_block) or ""
+            translated_lines = translated_block.split("\n")
+            
+            # Ensure we have a match for each line; pad if necessary
+            if len(translated_lines) < len(original_texts):
+                translated_lines.extend([""] * (len(original_texts) - len(translated_lines)))
+
+            # 3. PASS 1: Draw all background "patches"
+            # This ensures no box ever erases text from another line
+            for metadata in lines_metadata:
+                x_min, y_min, x_max, y_max = metadata['box']
+                draw.rectangle([x_min-2, y_min-2, x_max+2, y_max+2], fill="white")
+
+            # 4. PASS 2: Draw all translated text on top of the patches
+            for i, metadata in enumerate(lines_metadata):
+                x_min, y_min, x_max, y_max = metadata['box']
                 box_w = x_max - x_min
                 box_h = y_max - y_min
                 
-                # Draw background (expanded slightly for legibility)
-                draw.rectangle([x_min-2, y_min-2, x_max+2, y_max+2], fill="white")
+                translated_text = translated_lines[i].strip()
                 
                 # Robust font size calculation
                 font_size = max(12, int(box_h * 0.9))
@@ -109,7 +135,7 @@ class AppController(QObject):
                 except:
                     font = ImageFont.load_default()
                 
-                # Auto-shrink if text is too wide for the box
+                # Auto-shrink logic
                 text_bbox = draw.textbbox((0, 0), translated_text, font=font)
                 text_w = text_bbox[2] - text_bbox[0]
                 if text_w > box_w and box_w > 0:
@@ -121,7 +147,7 @@ class AppController(QObject):
 
                 draw.text((x_min, y_min), translated_text, fill="black", font=font)
 
-            self.update_ui_signal.emit("\n".join(full_original_text), translated_img)
+            self.update_ui_signal.emit("\n".join(original_texts), translated_img)
         except Exception as e:
             print(f"Controller Error: {e}")
             self.update_ui_signal.emit(f"Error: {e}", None)
