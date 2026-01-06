@@ -9,7 +9,8 @@ class GoogleTranslatorProvider(BaseTranslator):
 
     def translate(self, text: str) -> str:
         try:
-            return self.translator.translate(text)
+            result = self.translator.translate(text)
+            return result if result is not None else ""
         except Exception as e:
             return f"Google Error: {str(e)[:20]}"
 
@@ -26,7 +27,8 @@ class OpenAITranslatorProvider(BaseTranslator):
                     {"role": "user", "content": text}
                 ]
             )
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            return content.strip() if content else ""
         except Exception as e:
             return f"GPT Error: {str(e)[:20]}"
 

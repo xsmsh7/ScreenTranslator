@@ -91,7 +91,7 @@ class AppController(QObject):
                 if not line_text: continue
                 
                 full_original_text.append(line_text)
-                translated_text = translator.translate(line_text)
+                translated_text = translator.translate(line_text) or ""
                 
                 # Draw logic
                 x_min, y_min = group.left.min(), group.top.min()
