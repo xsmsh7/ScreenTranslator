@@ -5,6 +5,7 @@ def get_tesseract_cmd():
     """Returns the path to the tesseract executable."""
     # Common Windows paths
     paths = [
+        r'C:\Users\RD\AppData\Local\Programs\Tesseract-OCR\tesseract.exe',
         r'C:\Program Files\Tesseract-OCR\tesseract.exe',
         r'C:\Users\RD\AppData\Local\Tesseract-OCR\tesseract.exe'
     ]
