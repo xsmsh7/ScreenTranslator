@@ -27,6 +27,11 @@ class ResultWindow(QWidget):
         self.original_text_display.setReadOnly(True)
         self.original_text_display.setMaximumHeight(80)
         
+        self.translated_text_display = QTextEdit()
+        self.translated_text_display.setPlaceholderText("Translated Text...")
+        self.translated_text_display.setReadOnly(True)
+        self.translated_text_display.setMaximumHeight(120)
+        
         self.provider_combo = QComboBox()
         self.provider_combo.addItems(["google", "openai"])
         
@@ -37,6 +42,8 @@ class ResultWindow(QWidget):
         layout.addWidget(self.scroll_area, 1)
         layout.addWidget(QLabel("Original Text:"))
         layout.addWidget(self.original_text_display)
+        layout.addWidget(QLabel("Translated Text:"))
+        layout.addWidget(self.translated_text_display)
         layout.addWidget(QLabel("Provider:"))
         layout.addWidget(self.provider_combo)
         layout.addWidget(self.btn_new_capture)
@@ -49,8 +56,9 @@ class ResultWindow(QWidget):
         self.btn_new_capture.clicked.connect(self.capture_requested.emit)
         self.provider_combo.currentTextChanged.connect(self.provider_changed.emit)
 
-    def update_display(self, original_text, pil_image):
+    def update_display(self, original_text, translated_text, pil_image):
         self.original_text_display.setText(original_text)
+        self.translated_text_display.setText(translated_text)
         if pil_image:
             q_img = self.pil_to_qimage(pil_image)
             pixmap = QPixmap.fromImage(q_img)

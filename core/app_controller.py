@@ -13,7 +13,7 @@ from utils import helpers as utils
 from PIL import ImageDraw, ImageFont
 
 class AppController(QObject):
-    update_ui_signal = pyqtSignal(str, object)
+    update_ui_signal = pyqtSignal(str, str, object)  # (original_text, translated_text, image)
 
     def __init__(self):
         super().__init__()
@@ -71,7 +71,7 @@ class AppController(QObject):
             # Perform OCR
             data = self.ocr_service.perform_ocr(image)
             if data is None or data.empty:
-                self.update_ui_signal.emit("No text found", image)
+                self.update_ui_signal.emit("No text found", "", image)
                 return
 
             # Get Translator
@@ -102,7 +102,7 @@ class AppController(QObject):
                 })
 
             if not original_texts:
-                self.update_ui_signal.emit("No translatable text found", image)
+                self.update_ui_signal.emit("No translatable text found", "", image)
                 return
 
             # 2. BATCH TRANSLATION: Join lines for better context and speed
@@ -116,11 +116,14 @@ class AppController(QObject):
 
             # 3. Draw Overlay
             draw_translation_overlay(translated_img, lines_metadata, translated_lines)
+            
+            # Prepare translated text for UI display (copyable)
+            translated_block = "\n".join(translated_lines)
 
-            self.update_ui_signal.emit("\n".join(original_texts), translated_img)
+            self.update_ui_signal.emit("\n".join(original_texts), translated_block, translated_img)
         except Exception as e:
             print(f"Controller Error: {e}")
-            self.update_ui_signal.emit(f"Error: {e}", None)
+            self.update_ui_signal.emit(f"Error: {e}", "", None)
 
     def run(self):
         self.start_capture()
