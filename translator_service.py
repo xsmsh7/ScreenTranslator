@@ -26,8 +26,10 @@ class TranslatorService:
             # Get detailed OCR data (including bounding boxes)
             # Use --psm 6 to assume uniform block of text (prevents wild layout detection on small clips)
             data = pytesseract.image_to_data(image, lang='eng', config='--psm 6', output_type=pytesseract.Output.DATAFRAME)
-            # Filter out empty text detections
-            data = data[data.text.notna() & (data.text.str.strip() != "")]
+            # Filter out empty text detections. Cast to string first to avoid .str accessor errors on numeric/null data.
+            data = data[data.text.notna()]
+            data['text'] = data['text'].astype(str)
+            data = data[data['text'].str.strip() != ""]
             return data
         except Exception as e:
             print(f"OCR Data Error: {e}")
@@ -83,21 +85,35 @@ class TranslatorService:
         # Draw results
         for i, item in enumerate(line_data):
             # Align translated lines back to original boxes
-            # If split count doesn't match, we fallback
             text_to_draw = translated_lines[i] if i < len(translated_lines) else "..."
             
             x_min, y_min, x_max, y_max = item['box']
+            box_w = x_max - x_min
+            box_h = y_max - y_min
             
-            # Hide original
-            draw.rectangle([x_min-1, y_min-1, x_max+1, y_max+1], fill="white")
+            # Draw semi-opaque background for better readability
+            # Expand box slightly for padding
+            padding = 2
+            bg_rect = [x_min - padding, y_min - padding, x_max + padding, y_max + padding]
+            draw.rectangle(bg_rect, fill="white")
             
-            # Draw translation
-            font_size = max(11, int((y_max - y_min) * 0.85))
+            # Robust font size calculation
+            font_size = max(12, int(box_h * 0.9))
             try:
                 font = ImageFont.truetype(font_path, font_size) if font_path else ImageFont.load_default()
             except:
                 font = ImageFont.load_default()
             
+            # If text is too wide for the box, shrink it
+            text_bbox = draw.textbbox((0, 0), text_to_draw, font=font)
+            text_w = text_bbox[2] - text_bbox[0]
+            if text_w > box_w and box_w > 0:
+                font_size = max(10, int(font_size * (box_w / text_w)))
+                try:
+                    font = ImageFont.truetype(font_path, font_size) if font_path else ImageFont.load_default()
+                except:
+                    font = ImageFont.load_default()
+
             draw.text((x_min, y_min), text_to_draw, fill="black", font=font)
 
         return translated_img, "\n".join(full_original_text)
