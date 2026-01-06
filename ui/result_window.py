@@ -11,6 +11,7 @@ class ResultWindow(QWidget):
         super().__init__()
         self.setWindowTitle("Translation Result")
         self.resize(600, 500)
+
         
         layout = QVBoxLayout()
         
@@ -71,3 +72,8 @@ class ResultWindow(QWidget):
             img = QImage(data, pil_img.width, pil_img.height, stride, QImage.Format.Format_RGBA8888)
             return img.copy()
         return QImage()
+
+    def closeEvent(self, event):
+        from PyQt6.QtWidgets import QApplication
+        QApplication.quit()
+        event.accept()
